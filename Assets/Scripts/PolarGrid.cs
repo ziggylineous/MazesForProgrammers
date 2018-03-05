@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Mazes/Polar Maze", fileName = "polaMaze", order = 0)]
-public class PolarGrid : GridGraphShape
+public class PolarGrid : ScriptableObject
 {
     [SerializeField]
     private int rowCount;
@@ -11,6 +11,17 @@ public class PolarGrid : GridGraphShape
 
     [SerializeField]
     private int[] rowLengthsAccumulated;
+
+    [SerializeField]
+    private PositionGraph graph;
+
+    public Graph Graph { get { return graph; } }
+
+    public void Awake()
+    {
+        if (rowLengths == null) rowLengths = new int[0];
+        if (rowLengthsAccumulated == null) rowLengthsAccumulated = new int[0];
+    }
 
     public int RowCount
     {
@@ -49,38 +60,42 @@ public class PolarGrid : GridGraphShape
 
             rowLengths[r] = cellCount;
             rowLengthsAccumulated[r] = rowLengthsAccumulated[r - 1] + rowLengths[r - 1];
-
-            Debug.LogFormat("row {0}: len = {1}, lenAccum = {2}", r, cellCount, rowLengthsAccumulated[r]);
         }
     }
 
     private void InitGraph()
     {
         int cellCount = rowLengthsAccumulated[rowCount - 1] + rowLengths[rowCount - 1];
-        graph = new Graph(cellCount);
+
+        if (graph == null)
+        {
+            graph = new PositionGraph(cellCount);
+            Debug.Log("polarGrid: creating graph (unity doesnt initialize it)");         
+        }
+        else
+        {
+            graph.Size = cellCount;
+        }
     }
 
     private void InitPositions()
     {
-        vertexPositions = new Position[graph.Size];
-
         for (int i = 0; i != rowCount; ++i)
         {
             for (int j = 0; j != rowLengths[i]; ++j)
             {
                 int vertex = RowColIndex(i, j);
-                vertexPositions[vertex].row = i;
-                vertexPositions[vertex].col = j;
+                graph[vertex] = new Position(i, j);
             }
         }
     }
 
-    public override int RowColIndex(int row, int col)
+    public int RowColIndex(int row, int col)
     {
         return rowLengthsAccumulated[row] + col;
     }
 
-    public override Graph AdjacentGraph
+    public Graph AdjacentGraph
     {
         get
         {
@@ -88,7 +103,7 @@ public class PolarGrid : GridGraphShape
 
             for (int vertex = 1; vertex != graph.Size; ++vertex)
             {
-                Position position = vertexPositions[vertex];
+                Position position = graph[vertex];
 
                 // sides
                 int rowLen = rowLengths[position.row];
@@ -111,7 +126,7 @@ public class PolarGrid : GridGraphShape
 
     public int Inward(int vertex)
     {
-        return Inward(vertexPositions[vertex]);
+        return Inward(graph[vertex]);
     }
 
     public int Inward(Position vertexPosition)

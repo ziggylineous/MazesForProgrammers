@@ -2,10 +2,13 @@ using UnityEngine;
 
 
 [CreateAssetMenu(menuName = "Mazes/Rect Maze", fileName = "rectMaze", order = 0)]
-public class RectGrid : GridGraphShape
+public class RectGrid : ScriptableObject
 {
     public int width;
     public int height;
+
+    [SerializeField]
+    protected PositionGraph graph;
 
     public void SetSize(int w, int h)
     {
@@ -13,23 +16,19 @@ public class RectGrid : GridGraphShape
         height = h;
 
         graph.Size = width * height;
-        vertexPositions = new Position[width * height]; 
 
         for (int i = 0; i != graph.Size; ++i)
-        {
-            vertexPositions[i].row = i / width;
-            vertexPositions[i].col = i % width;
-        }
+            graph[i] = new Position(i / width, i % width);
 
         Debug.LogFormat("Initialized maze {0} {1}", width, height);
     }
 
-    public override int RowColIndex(int row, int col)
+    public int RowColIndex(int row, int col)
     {
         return row * width + col;
     }
 
-    public override Graph AdjacentGraph
+    public virtual Graph AdjacentGraph
     {
         get
         {
@@ -57,27 +56,29 @@ public class RectGrid : GridGraphShape
 
     public int EastOf(int westVertex)
     {
-        Position position = vertexPositions[westVertex];
+        Position position = graph[westVertex];
         return position.col == (width - 1) ? -1 : westVertex + 1;
     }
 
     public int WestOf(int eastVertex)
     {
-        Position position = vertexPositions[eastVertex];
+        Position position = graph[eastVertex];
         return position.col == 0 ? -1 : eastVertex - 1;
     }
 
     public int NorthOf(int southVertex)
     {
-        Position position = vertexPositions[southVertex];
+        Position position = graph[southVertex];
         return position.row == 0 ? -1 : southVertex - width;
     }
 
     public int SouthOf(int northVertex)
     {
-        Position position = vertexPositions[northVertex];
+        Position position = graph[northVertex];
         return position.row == (height - 1) ? -1 : northVertex + width;
     }
+
+    public Graph Graph { get { return graph; }}
 
     public override string ToString()
     {

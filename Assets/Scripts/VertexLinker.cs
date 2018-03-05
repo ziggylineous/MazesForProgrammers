@@ -2,12 +2,34 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public class VertexLinkerHelper
+{
+    public Graph buildingGraph;
+    public Graph adjacent;
 
-public abstract class CellLinker
+    public VertexLinkerHelper(Graph buildingGraph, Graph adjacent)
+    {
+        this.buildingGraph = buildingGraph;
+        this.adjacent = adjacent;
+    }
+
+    public virtual void Link(int v, int w)
+    {
+        buildingGraph.LinkVertices(v, w);
+    }
+
+    public virtual List<int> NeighborsOf(int v)
+    {
+        return adjacent.LinksOf(v);
+    }
+}
+
+
+public abstract class VertexLinker
 {
     public static System.Random randomAccess = new System.Random();
 
-    public abstract void Build(GridGraphShape grid);
+    public abstract void Build(VertexLinkerHelper linkerHelper);
     
     public int Sample(List<int> cells)
     {
@@ -15,9 +37,9 @@ public abstract class CellLinker
     }
 }
 
-public class BinaryCellLinker : CellLinker
+public class BinaryVertexLinker : VertexLinker
 {
-    public override void Build(GridGraphShape grid)
+    public override void Build(VertexLinkerHelper linkerHelper)
     {
         System.Random random = new System.Random();
 
@@ -51,9 +73,9 @@ public class BinaryCellLinker : CellLinker
     }
 }
 
-public class SidewinderCellLinker : CellLinker
+public class SidewinderVertexLinker : VertexLinker
 {
-    public override void Build(GridGraphShape grid)
+    public override void Build(VertexLinkerHelper linkerHelper)
     {
         /*System.Random random = new System.Random();
         System.Random runRandom = new System.Random();
@@ -98,22 +120,21 @@ public class SidewinderCellLinker : CellLinker
 }
 
 
-public class RandomWalkCellLinker : CellLinker
+public class RandomWalkVertexLinker : VertexLinker
 {
-    public override void Build(GridGraphShape grid)
+    public override void Build(VertexLinkerHelper linkerHelper)
     {
-        Graph buildingGraph = grid.graph;
-		Graph adjacentGraph = grid.AdjacentGraph;
+        Graph buildingGraph = linkerHelper.buildingGraph;
         int vertex = buildingGraph.RandomVertex;
-        int unvisitedCount = grid.graph.Size - 1;
+        int unvisitedCount = buildingGraph.Size - 1;
 
         while (unvisitedCount > 0)
         {
-            int neighbor = adjacentGraph.RandomLinkOf(vertex);
+            int neighbor = Sample(linkerHelper.NeighborsOf(vertex));
 
             if (!buildingGraph.HasAnyLink(neighbor))
             {
-                buildingGraph.LinkVertices(vertex, neighbor);
+                linkerHelper.Link(vertex, neighbor);
                 --unvisitedCount;
             }
 
@@ -123,22 +144,21 @@ public class RandomWalkCellLinker : CellLinker
 }
 
 
-public class HuntAndKillCellLinker : CellLinker
+public class HuntAndKillVertexLinker : VertexLinker
 {
-    public override void Build(GridGraphShape grid)
+    public override void Build(VertexLinkerHelper linkerHelper)
     {
-		Graph buildingGraph = grid.graph;
-        Graph adjacentGraph = grid.AdjacentGraph;
+        Graph buildingGraph = linkerHelper.buildingGraph;
         int cell = buildingGraph.RandomVertex;
 
         while (cell != -1)
         {
-            List<int> unvisitedAdjacent = adjacentGraph.LinksOf(cell).FindAll(adj => !buildingGraph.HasAnyLink(adj));
+            List<int> unvisitedAdjacent = linkerHelper.NeighborsOf(cell).FindAll(adj => !buildingGraph.HasAnyLink(adj));
 
             if (unvisitedAdjacent.Count != 0)
             {
                 int neighbor = Sample(unvisitedAdjacent);
-                buildingGraph.LinkVertices(cell, neighbor);
+                linkerHelper.Link(cell, neighbor);
                 cell = neighbor;
             }
             else
@@ -148,11 +168,11 @@ public class HuntAndKillCellLinker : CellLinker
                 for (int i = 0; cell == -1 && i != buildingGraph.Size; ++i)
                 {
                     if (!buildingGraph.HasAnyLink(i) &&
-                        adjacentGraph.LinksOf(i).Exists(adj => buildingGraph.HasAnyLink(adj)))
+                        linkerHelper.NeighborsOf(i).Exists(adj => buildingGraph.HasAnyLink(adj)))
                     {
                         cell = i;
-                        List<int> visitedAdjacent = adjacentGraph.LinksOf(i).FindAll(adj => buildingGraph.HasAnyLink(adj));
-                        buildingGraph.LinkVertices(cell, Sample(visitedAdjacent));
+                        List<int> visitedAdjacent = linkerHelper.NeighborsOf(i).FindAll(adj => buildingGraph.HasAnyLink(adj));
+                        linkerHelper.Link(cell, Sample(visitedAdjacent));
                     }
                 }
             }
@@ -161,19 +181,17 @@ public class HuntAndKillCellLinker : CellLinker
 }
 
 
-public class RecursiveBacktrackerCellLinker : CellLinker
+public class RecursiveBacktrackerVertexLinker : VertexLinker
 {
-    public override void Build(GridGraphShape grid)
+    public override void Build(VertexLinkerHelper linkerHelper)
     {
-		Graph adjacentGraph = grid.AdjacentGraph;
-        Graph buildingGraph = grid.graph;
         Stack<int> stack = new Stack<int>();
-        stack.Push(buildingGraph.RandomVertex);
+        stack.Push(linkerHelper.buildingGraph.RandomVertex);
 
         while (stack.Count != 0)
         {
-            int current = stack.Peek();
-            List<int> unvisitedAdjacent = adjacentGraph.LinksOf(current).FindAll(adj => !buildingGraph.HasAnyLink(adj));
+			int current = stack.Peek();
+            List<int> unvisitedAdjacent = linkerHelper.NeighborsOf(current).FindAll(adj => !linkerHelper.buildingGraph.HasAnyLink(adj));
 
             if (unvisitedAdjacent.Count == 0)
             {
@@ -182,7 +200,7 @@ public class RecursiveBacktrackerCellLinker : CellLinker
             else
             {
                 int neighbor = Sample(unvisitedAdjacent);
-                buildingGraph.LinkVertices(current, neighbor);
+                linkerHelper.Link(current, neighbor);
                 stack.Push(neighbor);
             }
         }

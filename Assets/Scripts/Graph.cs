@@ -28,8 +28,8 @@ public class Graph : ISerializationCallbackReceiver
     {
         if (!vertexLinks[v].Contains(w))
         {
-            vertexLinks[v].Add(w);
-            vertexLinks[w].Add(v);
+        	vertexLinks[v].Add(w);
+			vertexLinks[w].Add(v);
         }
     }
 
@@ -60,7 +60,7 @@ public class Graph : ISerializationCallbackReceiver
             links.Clear();
     }
 
-    public int Size
+    public virtual int Size
     {
         get { return vertexLinks.Length; }
         set

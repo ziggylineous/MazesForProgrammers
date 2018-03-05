@@ -28,7 +28,7 @@ public class TriGrid : RectGrid
 
     public bool IsUpright(int vertex)
     {
-        Position position = vertexPositions[vertex];
+        Position position = graph[vertex];
         return ((position.row + position.col) % 2) == 0;
     }
 
