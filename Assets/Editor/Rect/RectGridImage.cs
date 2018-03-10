@@ -1,74 +1,55 @@
 using UnityEngine;
 
-public class RectGridImage
+public class RectGridImage : GridImage<RectGrid>
 {
     private int cellSize;
-    private Color backgroundColor;
-    private Color wallColor;
-    private Texture2D tex;
 
     public RectGridImage(int cellSize, Color backgroundColor, Color wallColor)
+        : base(backgroundColor, wallColor)
     {
         this.cellSize = cellSize;
-        this.backgroundColor = backgroundColor;
-        this.wallColor = wallColor;
-        tex = new Texture2D(100, 100);
     }
 
-    public void Draw(RectGrid maze, Color[] cellColors = null)
+    protected override void DrawOutsideWalls(RectGrid grid)
     {
-        int imageWidth = cellSize * maze.width;
-        int imageHeight = cellSize * maze.height;
+        Vector2Int imageSize = CalculateImageSize(grid);
 
-        tex.Resize(imageWidth, imageHeight);
-
-        if (cellColors == null) tex.Fill(backgroundColor);
-        else PaintCells(maze, cellColors);
-
-        DrawOutsideWalls(imageWidth, imageHeight);
-        DrawWalls(maze);
-        tex.Apply();
-    }
-
-    private void DrawOutsideWalls(int imageWidth, int imageHeight)
-    {
-        /*Vector2Int[] verts = new Vector2Int[]
+        Vector2Int[] verts = new Vector2Int[]
         {
             new Vector2Int(0, 0),
-            new Vector2Int(imageWidth, 0),
-            new Vector2Int(imageWidth, imageHeight),
-            new Vector2Int(0, imageHeight)
+            new Vector2Int(imageSize.x, 0),
+            new Vector2Int(imageSize.x, imageSize.y),
+            new Vector2Int(0, imageSize.y)
         };
 
         for (int i = 0; i != 4; ++i)
         {
             int next = (i + 1) % 4;
-            tex.Line(verts[i], verts[next], Color.blue, 2);
-        }*/
+            tex.Line(verts[i], verts[next], Color.blue);
+        }
     }
 
-    private void PaintCells(RectGrid maze, Color[] cellColors)
+    protected override void PaintCells(RectGrid grid, Color[] cellColors)
     {
         RectInt rect = new RectInt(0, 0, cellSize, cellSize);
 
-        for (int i = 0; i != maze.height; ++i)
+        for (int i = 0; i != grid.height; ++i)
         {
             rect.y = tex.height - cellSize - (i * cellSize);
 
-            for (int j = 0; j != maze.width; ++j)
+            for (int j = 0; j != grid.width; ++j)
             {
-                Color cellColor = cellColors[maze.RowColIndex(i, j)];
+                Color cellColor = cellColors[grid.PositionToVertex(i, j)];
                 rect.x = j * cellSize;
                 tex.Fill(rect, cellColor);
             }
         }
-
     }
 
-    private void DrawWalls(RectGrid rectGrid)
+    protected override void DrawWalls(RectGrid grid)
     {
-        int bottomRowIndex = rectGrid.height - 1;
-        int rightmostColIndex = rectGrid.width - 1;
+        int bottomRowIndex = grid.height - 1;
+        int rightmostColIndex = grid.width - 1;
 
         for (int i = 0; i < bottomRowIndex; ++i)
         {
@@ -80,12 +61,12 @@ public class RectGridImage
                 int west = j * cellSize;
                 int east = west + cellSize;
 
-                int currentVertex = rectGrid.RowColIndex(i, j);
+                int currentVertex = grid.PositionToVertex(i, j);
 
-                if (!rectGrid.graph.AreLinked(currentVertex, rectGrid.EastOf(currentVertex)))
+                if (!grid.Graph.AreLinked(currentVertex, grid.EastOf(currentVertex)))
                     tex.VerticalLine(east, north, south, wallColor);
 
-                if (!rectGrid.graph.AreLinked(currentVertex, rectGrid.SouthOf(currentVertex)))
+                if (!grid.Graph.AreLinked(currentVertex, grid.SouthOf(currentVertex)))
                     tex.HorizontalLine(west, east, south, wallColor);
             }
         }
@@ -96,9 +77,9 @@ public class RectGridImage
 
         for (int i = 0; i < bottomRowIndex; ++i)
         {
-            int currentVertex = rectGrid.RowColIndex(i, rightmostColIndex);
+            int currentVertex = grid.PositionToVertex(i, rightmostColIndex);
 
-            if (!rectGrid.graph.AreLinked(currentVertex, rectGrid.SouthOf(currentVertex)))
+            if (!grid.Graph.AreLinked(currentVertex, grid.SouthOf(currentVertex)))
             {
                 int south = tex.height - ((i + 1) * cellSize);
 
@@ -114,9 +95,9 @@ public class RectGridImage
 
         for (int j = 0; j < rightmostColIndex; ++j)
         {
-            int currentCell = rectGrid.RowColIndex(bottomRowIndex, j);
+            int currentCell = grid.PositionToVertex(bottomRowIndex, j);
 
-            if (!rectGrid.graph.AreLinked(currentCell, rectGrid.EastOf(currentCell)))
+            if (!grid.Graph.AreLinked(currentCell, grid.EastOf(currentCell)))
             {
                 int east = cellSize * (j + 1);
 
@@ -127,11 +108,14 @@ public class RectGridImage
         }
     }
 
-    public int CellSize
+	protected override Vector2Int CalculateImageSize(RectGrid grid)
+	{
+        return new Vector2Int(grid.width * cellSize, grid.height * cellSize);
+	}
+
+	public int CellSize
     {
         get { return cellSize; }
         set { cellSize = value; }
     }
-
-    public Texture2D Tex { get { return tex; } }
 }

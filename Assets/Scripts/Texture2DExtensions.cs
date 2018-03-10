@@ -137,3 +137,21 @@ public static class Texture2DExtensions
         }
     }
 }
+
+public struct Line
+{
+    public Vector2Int a;
+    public Vector2Int b;
+
+    public Line(Vector2Int a, Vector2Int b)
+    {
+        this.a = a;
+        this.b = b;
+    }
+
+    public Line(int x1, int y1, int x2, int y2)
+    {
+        this.a = new Vector2Int(x1, y1);
+        this.b = new Vector2Int(x2, y2);
+    }
+}

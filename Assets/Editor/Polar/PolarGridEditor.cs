@@ -8,7 +8,7 @@ public class PolarGridEditor : Editor
 
     private int prevBuilderIndex;
     private string[] builderNames;
-    private CellLinker[] builders;
+    private VertexLinker[] builders;
 
     private PolarGridImage image;
 
@@ -23,10 +23,10 @@ public class PolarGridEditor : Editor
             "Recursive Backtracker"
         };
 
-        builders = new CellLinker[] {
-            new RandomWalkCellLinker(),
-            new HuntAndKillCellLinker(),
-            new RecursiveBacktrackerCellLinker()
+        builders = new VertexLinker[] {
+            new RandomWalkVertexLinker(),
+            new HuntAndKillVertexLinker(),
+            new RecursiveBacktrackerVertexLinker()
         };
 
         prevBuilderIndex = 0;
@@ -41,7 +41,8 @@ public class PolarGridEditor : Editor
         SerializedProperty rowCountSerialized = serializedObject.FindProperty("rowCount");
         prevRowCount = rowCountSerialized.intValue;
 
-        image.Draw((PolarGrid)serializedObject.targetObject);
+        if (prevRowCount > 0)
+            image.Draw((PolarGrid)serializedObject.targetObject);
     }
 
     public override void OnInspectorGUI()
@@ -49,22 +50,26 @@ public class PolarGridEditor : Editor
         PolarGrid polarGrid = (PolarGrid) target;
 
         int newRowCount = EditorGUILayout.IntField("row count", polarGrid.RowCount);
-        EditorGUILayout.LabelField("cell count", polarGrid.graph.Size.ToString());
+        EditorGUILayout.LabelField("cell count", polarGrid.Graph.Size.ToString());
 
-        if (newRowCount != prevRowCount)
+        if (newRowCount != prevRowCount && newRowCount > 0)
         {
             prevRowCount = newRowCount;
             ChangeSize(newRowCount);
         }
 
-        int builderIndex = EditorGUILayout.Popup(prevBuilderIndex, builderNames);
-        if (builderIndex != prevBuilderIndex || GUILayout.Button("rebuild"))
+        if (prevRowCount > 0)
         {
-            prevBuilderIndex = builderIndex;
-            RebuildMaze(builders[builderIndex]);
+			int builderIndex = EditorGUILayout.Popup(prevBuilderIndex, builderNames);
+			if (builderIndex != prevBuilderIndex || GUILayout.Button("rebuild"))
+			{
+				prevBuilderIndex = builderIndex;
+				RebuildMaze(builders[builderIndex]);
+			}
+			
+			DisplayImage();
+            
         }
-
-        DisplayImage();
     }
 
     private void ChangeSize(int newRowCount)
@@ -104,17 +109,17 @@ public class PolarGridEditor : Editor
         }
     }
 
-    private void RebuildMaze(CellLinker builder)
+    private void RebuildMaze(VertexLinker builder)
     {
         Debug.Log("rebuilding " + builder.ToString());
 
         PolarGrid maze = (PolarGrid)target;
 
-        maze.graph.ClearLinks();
-        builder.Build(maze);
+        maze.Graph.ClearLinks();
+        builder.Build(new VertexLinkerHelper(maze.Graph, maze.AdjacentGraph));
         EditorUtility.SetDirty(maze);
 
-        BreadthFirst bf = new BreadthFirst(maze.graph, 0);
+        BreadthFirst bf = new BreadthFirst(maze.Graph, 0);
         bf.Run();
         int[] distances = bf.Distances;
         float maxDistance = (float)bf.MaxDistance;

@@ -22,6 +22,17 @@ public class VertexLinkerHelper
     {
         return adjacent.LinksOf(v);
     }
+
+    public List<int> UnvisitedNeighborsOf(int v)
+    {
+        return NeighborsOf(v).FindAll(adj => !buildingGraph.HasAnyLink(adj));
+    }
+
+    public List<int> VisitedNeighborsOf(int v)
+    {
+        return  NeighborsOf(v).FindAll(adj => buildingGraph.HasAnyLink(adj));
+    }
+
 }
 
 
@@ -150,10 +161,11 @@ public class HuntAndKillVertexLinker : VertexLinker
     {
         Graph buildingGraph = linkerHelper.buildingGraph;
         int cell = buildingGraph.RandomVertex;
+        int graphSize = buildingGraph.Size; // save this value before, because weave mazes make it bigger
 
         while (cell != -1)
         {
-            List<int> unvisitedAdjacent = linkerHelper.NeighborsOf(cell).FindAll(adj => !buildingGraph.HasAnyLink(adj));
+            List<int> unvisitedAdjacent = linkerHelper.UnvisitedNeighborsOf(cell);
 
             if (unvisitedAdjacent.Count != 0)
             {
@@ -165,13 +177,13 @@ public class HuntAndKillVertexLinker : VertexLinker
             {
 				cell = -1;
 
-                for (int i = 0; cell == -1 && i != buildingGraph.Size; ++i)
+                for (int i = 0; cell == -1 && i != graphSize; ++i)
                 {
                     if (!buildingGraph.HasAnyLink(i) &&
                         linkerHelper.NeighborsOf(i).Exists(adj => buildingGraph.HasAnyLink(adj)))
                     {
                         cell = i;
-                        List<int> visitedAdjacent = linkerHelper.NeighborsOf(i).FindAll(adj => buildingGraph.HasAnyLink(adj));
+                        List<int> visitedAdjacent = linkerHelper.VisitedNeighborsOf(i);
                         linkerHelper.Link(cell, Sample(visitedAdjacent));
                     }
                 }
@@ -191,7 +203,7 @@ public class RecursiveBacktrackerVertexLinker : VertexLinker
         while (stack.Count != 0)
         {
 			int current = stack.Peek();
-            List<int> unvisitedAdjacent = linkerHelper.NeighborsOf(current).FindAll(adj => !linkerHelper.buildingGraph.HasAnyLink(adj));
+            List<int> unvisitedAdjacent = linkerHelper.UnvisitedNeighborsOf(current);
 
             if (unvisitedAdjacent.Count == 0)
             {

@@ -21,8 +21,8 @@ public class PolarGridImage
     public void Draw(PolarGrid maze, Color[] distances = null)
     {
         int size = cellHeight * maze.RowCount * 2;
-        tex.Resize(size, size);
 
+        tex.Resize(size, size);
 
         if (distances != null)
             PaintDistances(maze, distances);
@@ -104,10 +104,10 @@ public class PolarGridImage
                 int inward = polarGrid.Inward(new Position(i, j));
 				int ccwVertex = polarGrid.CCW(new Position(i, j));
 
-                if (!polarGrid.graph.AreLinked(vertex, inward))
+                if (!polarGrid.Graph.AreLinked(vertex, inward))
                     tex.Line(a, c, wallColor);
 
-                if (!polarGrid.graph.AreLinked(vertex, ccwVertex))
+                if (!polarGrid.Graph.AreLinked(vertex, ccwVertex))
                     tex.Line(a, b, wallColor);
             }
         }

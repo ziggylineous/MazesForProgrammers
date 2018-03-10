@@ -1,46 +1,42 @@
 using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(RectGrid))]
-public class MazeEditor : Editor
+[CustomEditor(typeof(TriGrid))]
+public class TriGridEditor : Editor
 {
     private int prevWidth;
     private int prevHeight;
 
     private int prevBuilderIndex;
     private string[] builderNames;
-    private CellLinker[] builders;
+    private VertexLinker[] builders;
 
-    private RectGridImage image;
+    private TriImage image;
 
 
     public void Awake()
     {
         Debug.Log("MazeEditor::Awake()");
         builderNames = new string[]{
-            //"Binary",
-            //"Sidewinder",
             "Random Walk",
             "Hunt and Kill",
             "Recursive Backtracker"
         };
 
-        builders = new CellLinker[] {
-            //new BinaryCellLinker(),
-            //new SidewinderCellLinker(),
-            new RandomWalkCellLinker(),
-            new HuntAndKillCellLinker(),
-            new RecursiveBacktrackerCellLinker()
+        builders = new VertexLinker[] {
+            new RandomWalkVertexLinker(),
+            new HuntAndKillVertexLinker(),
+            new RecursiveBacktrackerVertexLinker()
         };
 
         prevBuilderIndex = 0;
 
-        image = new RectGridImage(30, Color.white, Color.blue);
+        image = new TriImage(30, Color.white, Color.blue);
     }
 
     public void OnEnable()
     {
-        Debug.Log("RectGridEditor::OnEnable()");
+        Debug.Log("TriGridEditor::OnEnable()");
 
         SerializedProperty widthSerialized = serializedObject.FindProperty("width");
         SerializedProperty heightSerialized = serializedObject.FindProperty("height");
@@ -48,16 +44,16 @@ public class MazeEditor : Editor
         prevWidth = widthSerialized.intValue;
         prevHeight = heightSerialized.intValue;
 
-        image.Draw((RectGrid)serializedObject.targetObject);
+        image.Draw((TriGrid)serializedObject.targetObject);
     }
 
     public override void OnInspectorGUI()
     {
-        RectGrid rectGrid = (RectGrid) target;
+        TriGrid rectGrid = (TriGrid)target;
 
         int newWidth = EditorGUILayout.IntField("width", rectGrid.width);
         int newHeight = EditorGUILayout.IntField("height", rectGrid.height);
-        EditorGUILayout.LabelField("cell count", rectGrid.graph.Size.ToString());
+        EditorGUILayout.LabelField("cell count", rectGrid.Graph.Size.ToString());
 
         if (newWidth != prevWidth || newHeight != prevHeight)
         {
@@ -78,7 +74,7 @@ public class MazeEditor : Editor
 
     private void ChangeSize(int width, int height)
     {
-        RectGrid rectGrid = (RectGrid)target;
+        TriGrid rectGrid = (TriGrid)target;
 
         rectGrid.SetSize(width, height);
 
@@ -89,12 +85,12 @@ public class MazeEditor : Editor
 
     private void DisplayImage()
     {
-        int newCellSize = EditorGUILayout.IntField("cellSize", image.CellSize);
+        int newSideize = EditorGUILayout.IntField("side size", image.SideSize);
 
-        if (newCellSize != image.CellSize)
+        if (newSideize != image.SideSize)
         {
-            image.CellSize = newCellSize;
-            image.Draw((RectGrid)target);
+            image.SideSize = newSideize;
+            image.Draw((TriGrid)target);
         }
 
         if (prevWidth > 0 && prevHeight > 0)
@@ -102,7 +98,7 @@ public class MazeEditor : Editor
             Rect lastRect = GUILayoutUtility.GetLastRect();
             //lastRect.
             EditorGUI.DrawPreviewTexture(
-                new Rect(lastRect.position.x, lastRect.yMax + 10, image.CellSize * prevWidth, image.CellSize * prevHeight),
+                new Rect(lastRect.position.x, lastRect.yMax + 10, image.Tex.width, image.Tex.height),
                 image.Tex
             );
         }
@@ -113,17 +109,17 @@ public class MazeEditor : Editor
         }
     }
 
-    private void RebuildMaze(CellLinker builder)
+    private void RebuildMaze(VertexLinker builder)
     {
         Debug.Log("rebuilding " + builder.ToString());
 
-        RectGrid maze = (RectGrid)target;
+        TriGrid maze = (TriGrid)target;
 
-        maze.graph.ClearLinks();
-        builder.Build(maze);
+        maze.Graph.ClearLinks();
+        builder.Build(new VertexLinkerHelper(maze.Graph, maze.AdjacentGraph));
         EditorUtility.SetDirty(maze);
 
-        BreadthFirst bf = new BreadthFirst(maze.graph, maze.BottomLeftVertex);
+        BreadthFirst bf = new BreadthFirst(maze.Graph, maze.BottomLeftVertex);
         bf.Run();
         int[] distances = bf.Distances;
         float maxDistance = (float)bf.MaxDistance;

@@ -96,7 +96,7 @@ public class TriImage
 
                 for (int col = fromCol; col != maxCol; ++col)
                 {
-                    int vertex = triGrid.RowColIndex(row, col);
+                    int vertex = triGrid.PositionToVertex(row, col);
 
 					int centerX = halfSideSizeInt + col * halfSideSizeInt;
 					int west = Mathf.Max(0, centerX - halfSideSizeInt);
@@ -151,12 +151,12 @@ public class TriImage
                 int west = Mathf.Max(0, centerX - halfSideSizeInt);
                 int east = centerX + halfSideSizeInt;
 
-                int currentVertex = grid.RowColIndex(i, j);
+                int currentVertex = grid.PositionToVertex(i, j);
 
-                if (!grid.graph.AreLinked(currentVertex, grid.EastOf(currentVertex)))
+                if (!grid.Graph.AreLinked(currentVertex, grid.EastOf(currentVertex)))
                     tex.Line(new Vector2Int(east, south), new Vector2Int(centerX, north), wallColor);
 
-                if (!grid.graph.AreLinked(currentVertex, grid.SouthOf(currentVertex)))
+                if (!grid.Graph.AreLinked(currentVertex, grid.SouthOf(currentVertex)))
                     tex.HorizontalLine(west, east, south, wallColor);
             }
 
@@ -167,12 +167,12 @@ public class TriImage
                 int west = centerX - halfSideSizeInt;
                 int east = centerX + halfSideSizeInt;
 
-                int currentVertex = grid.RowColIndex(i, j);
+                int currentVertex = grid.PositionToVertex(i, j);
 
-                if (!grid.graph.AreLinked(currentVertex, grid.EastOf(currentVertex)))
+                if (!grid.Graph.AreLinked(currentVertex, grid.EastOf(currentVertex)))
                     tex.Line(new Vector2Int(east, north), new Vector2Int(centerX, south), wallColor);
 
-                if (!grid.graph.AreLinked(currentVertex, grid.NorthOf(currentVertex)))
+                if (!grid.Graph.AreLinked(currentVertex, grid.NorthOf(currentVertex)))
                     tex.HorizontalLine(west, east, north, wallColor);
             }
         }

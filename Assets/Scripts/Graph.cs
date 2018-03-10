@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class Graph : ISerializationCallbackReceiver
 {
     [NonSerialized]
-    private List<int>[] vertexLinks;
+    private List<List<int>> vertexLinks;
 
     [SerializeField]
     private int[] serializedVertexLinks;
@@ -21,15 +21,15 @@ public class Graph : ISerializationCallbackReceiver
 
     public Graph(int nodeCount)
     {
-        Size = nodeCount;
+        this.Size = nodeCount;
     }
 
     public void LinkVertices(int v, int w)
     {
         if (!vertexLinks[v].Contains(w))
         {
-        	vertexLinks[v].Add(w);
-			vertexLinks[w].Add(v);
+            vertexLinks[v].Add(w);
+            vertexLinks[w].Add(v);
         }
     }
 
@@ -59,22 +59,36 @@ public class Graph : ISerializationCallbackReceiver
         foreach (List<int> links in vertexLinks)
             links.Clear();
     }
+    
+    public int NewVertex()
+    {
+        vertexLinks.Add(new List<int>());
+        return vertexLinks.Count - 1;
+    }
+
+    public virtual void RemoveVertex(int v)
+    {
+        for (int w = 0; w != Size; ++w)
+            vertexLinks[w].Remove(v);
+                
+        vertexLinks.RemoveAt(v);
+    }
 
     public virtual int Size
     {
-        get { return vertexLinks.Length; }
+        get { return vertexLinks.Count; }
         set
         {
-            vertexLinks = new List<int>[value];
+            vertexLinks = new List<List<int>>(value);
 
             for (int i = 0; i != value; ++i)
-                vertexLinks[i] = new List<int>();
+                vertexLinks.Add(new List<int>());
         }
     }
 
     public int RandomVertex
     {
-        get { return Random.Next(vertexLinks.Length); }
+        get { return Random.Next(vertexLinks.Count); }
     }
 
     public int LinkCount
@@ -82,23 +96,20 @@ public class Graph : ISerializationCallbackReceiver
         get
         {
             int linkCount = 0;
-            Array.ForEach(vertexLinks, links => linkCount += links.Count);
+            vertexLinks.ForEach(links => linkCount += links.Count);
             return linkCount;
         }
     }
 
     public void OnBeforeSerialize()
     {
-        if (vertexLinks == null || vertexLinks.Length == 0)
+        if (vertexLinks == null || vertexLinks.Count == 0)
         {
-            //Debug.Log("Graph::OnBeforeSerialize: no grid => nothing to serialize");
             serializedVertexLinks = new int[0];
         }
         else
         {
-//            Debug.Log("Graph::OnAfterDeserialize(): serializing links");
-
-            serializedVertexLinks = new int[Size + LinkCount];
+            serializedVertexLinks = new int[Size + LinkCount]; // the Size is for each vertex link count
             int current = 0;
 
             for (int i = 0; i != Size; ++i)
@@ -127,7 +138,12 @@ public class Graph : ISerializationCallbackReceiver
                 ++vertexCount;
             }
 
-            Size = vertexCount;
+            // doing by hand all over again,
+            // because if using size it clears the serialized data of sucesors!!!
+            vertexLinks = new List<List<int>>(vertexCount);
+
+            for (int i = 0; i != vertexCount; ++i)
+                vertexLinks.Add(new List<int>());
 
             int vertex = 0;
 
